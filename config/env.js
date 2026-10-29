@@ -11,7 +11,7 @@ const str = (v, dflt = '') => (v === undefined || v === '' ? dflt : String(v));
 const regex = (v) => (v ? new RegExp(v, 'i') : null);
 const trimSlash = (u) => u.replace(/\/+$/, '');
 
-const baseUrl = trimSlash(str(process.env.INSURANCE_BASE_URL, 'http://localhost:8081'));
+const baseUrl = trimSlash(str(process.env.INSURANCE_BASE_URL, 'http://34.14.164.35:8081'));
 // Trailing slash matters: relative endpoint paths ("applications") then APPEND to /api instead of
 // replacing it (lesson carried over from the FinServe starter project).
 const rawApi = trimSlash(str(process.env.INSURANCE_API_URL, `${baseUrl}/api`));
