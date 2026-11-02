@@ -28,6 +28,8 @@ class DashboardPage extends BasePage {
   /** Starts a new application and returns its id (parsed from the URL, or null if the URL has none). */
   async startNewApplication() {
     await this.newApplicationControl.click();
+    const draft = this.page.getByTestId('application-create-draft-button');
+    if (await draft.isVisible({ timeout: 3000 }).catch(() => false)) await draft.click();
     await expect(this.$(S.client.firstName)).toBeVisible();
     return applicationIdFromUrl(this.page.url());
   }

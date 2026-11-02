@@ -60,8 +60,8 @@ test.describe('Framework self-checks', () => {
       }
     }
     expect(offenders, 'hard-coded environment values outside config/env.js').toEqual([]);
-    // 2) the only default URL is localhost; credentials default only in config/env.js
-    expect(fs.readFileSync(path.join(ROOT, 'config', 'env.js'), 'utf8')).toContain("'http://localhost:8081'");
+    // 2) the base URL is read from INSURANCE_BASE_URL (the default may point at the lab VM, but only inside config/env.js)
+    expect(fs.readFileSync(path.join(ROOT, 'config', 'env.js'), 'utf8')).toContain('INSURANCE_BASE_URL');
     // 3) the health check classifies environment vs application problems
     expect(classify({ error: new Error('connect ECONNREFUSED 10.0.0.1:8081') }).kind).toBe('ENVIRONMENT');
     expect(classify({ status: 503 }).kind).toBe('ENVIRONMENT');

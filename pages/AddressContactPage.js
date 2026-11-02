@@ -13,6 +13,7 @@ class AddressContactPage extends BasePage {
   async fillContact(a) {
     await this.fillField(S.address.email, a.email);
     await this.fillField(S.address.phone, a.phone);
+    await this.choose(S.address.preferredContact, a.preferredContact || 'Email');
   }
 
   /** Fills the whole step; mailing address is copied via same-as-residential. */

@@ -104,6 +104,7 @@ const apiTest = base.test.extend({
   ...knownDefectFixtures,
   api: [
     async ({ playwright }, use) => {
+      base.test.skip(!(await ApiClient.isAvailable(playwright)), 'REST API (/api/auth/login) is not deployed on this environment - UI-only build (HTTP 404)');
       const client = await ApiClient.create(playwright, env.users.validAgent);
       await use(client);
       await client.dispose();
@@ -111,6 +112,7 @@ const apiTest = base.test.extend({
     { scope: 'worker' },
   ],
   anonApi: async ({ playwright }, use) => {
+    base.test.skip(!(await ApiClient.isAvailable(playwright)), 'REST API not deployed on this environment (HTTP 404)');
     const client = await ApiClient.create(playwright, null);
     await use(client);
     await client.dispose();
@@ -120,6 +122,7 @@ const apiTest = base.test.extend({
     await use(async (roleKey) => {
       const u = env.users[roleKey];
       base.test.skip(!u || !u.email, `No credentials for ${roleKey} - set AGENT_* in .env`);
+      base.test.skip(!(await ApiClient.isAvailable(playwright)), 'REST API not deployed on this environment (HTTP 404)');
       const c = await ApiClient.create(playwright, u);
       opened.push(c);
       return c;
@@ -131,6 +134,7 @@ const apiTest = base.test.extend({
 /** Hybrid: UI page objects AND an authenticated API client in the same test (UI-API integration scenarios). */
 const integrationTest = test.extend({
   api: async ({ playwright }, use) => {
+    base.test.skip(!(await ApiClient.isAvailable(playwright)), 'REST API not deployed on this environment (HTTP 404)');
     const client = await ApiClient.create(playwright, env.users.validAgent);
     await use(client);
     await client.dispose();

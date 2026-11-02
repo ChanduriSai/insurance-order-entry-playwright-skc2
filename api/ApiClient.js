@@ -31,6 +31,19 @@ class ApiClient {
     this.token = null;
   }
 
+  /** True when the deployment exposes the REST API (POST auth/login is routed). The lab build may be UI-only (Laravel 404). */
+  static async isAvailable(playwright) {
+    const ctx = await playwright.request.newContext({ baseURL: env.apiBaseUrl, extraHTTPHeaders: { Accept: 'application/json' } });
+    try {
+      const res = await ctx.post(ep.login, { data: { email: 'probe@insurance.test', password: 'probe' } });
+      return res.status() !== 404;
+    } catch {
+      return false;
+    } finally {
+      await ctx.dispose();
+    }
+  }
+
   static async create(playwright, user) {
     // Content-Type is NOT set globally: Playwright adds application/json for object payloads and multipart for file uploads.
     const headers = { Accept: 'application/json' };

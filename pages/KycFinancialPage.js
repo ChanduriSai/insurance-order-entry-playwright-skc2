@@ -18,12 +18,9 @@ class KycFinancialPage extends BasePage {
   }
 
   async setPep(isPep, details) {
-    if (isPep) {
-      await this.$(S.kyc.pepYes).check();
-      if (details && (await this.$(S.kyc.pepDetails).count())) await this.fillField(S.kyc.pepDetails, details);
-    } else if (await this.$(S.kyc.pepNo).count()) {
-      await this.$(S.kyc.pepNo).check();
-    }
+    await this.$(S.kyc.pepSelect).selectOption(isPep ? '1' : '0');
+    if (isPep && details && (await this.$(S.kyc.pepDetails).count())) await this.fillField(S.kyc.pepDetails, details);
+    if (await this.$(S.kyc.declaration).count()) await this.$(S.kyc.declaration).check();
   }
 
   /** What the agent can SEE for the SSN after entry: displayed element text or the field's own value. */

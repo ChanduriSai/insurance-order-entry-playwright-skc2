@@ -5,8 +5,9 @@ const { parseMoney } = require('../utils/parse');
 
 /** Steps 6 - Product Selection and policy configuration. */
 class ProductPage extends BasePage {
+  /** Products are offered as <option>s of the product dropdown on this step (the /products catalogue page has the cards). */
   get cards() {
-    return this.$$(S.product.cards);
+    return this.page.getByTestId('product-select').locator('option:not([value=""])');
   }
 
   get inactiveCards() {
@@ -26,16 +27,19 @@ class ProductPage extends BasePage {
 
   /** Selects the first product whose card text matches the pattern (or the first card if no pattern). */
   async select(pattern) {
-    const card = pattern ? this.cardFor(pattern) : this.cards.first();
-    await expect(card, `a product card${pattern ? ` matching ${pattern}` : ''}`).toBeVisible(); // count() below does not auto-wait
-    const button = card.getByRole('button', { name: S.product.selectButton.name }).or(card.getByTestId('product-select')).first();
-    if (await button.count()) await button.click();
-    else await card.click();
+    const dropdown = this.page.getByTestId('product-select');
+    await expect(dropdown, 'the product dropdown').toBeVisible();
+    const options = await this.cards.evaluateAll((os) => os.map((o) => ({ v: o.value, t: (o.textContent || '').trim() })));
+    const pat = pattern ? new RegExp(pattern.source || pattern, 'i') : null;
+    const hit = options.find((o) => !pat || pat.test(o.t)) || options[0];
+    if (!hit) throw new Error('No product available to select');
+    await dropdown.selectOption(hit.v);
   }
 
   async configure({ faceValue, frequency, paymentTerm, policyTerm } = {}) {
     if (faceValue !== undefined) await this.setFaceValue(faceValue);
     if (frequency) await this.setFrequency(frequency);
+    if (paymentTerm === undefined) await this.choose(S.product.paymentTerm, '20');
     if (paymentTerm) await this.choose(S.product.paymentTerm, paymentTerm);
     if (policyTerm) await this.choose(S.product.policyTerm, policyTerm);
   }

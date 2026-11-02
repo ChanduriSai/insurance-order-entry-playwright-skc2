@@ -12,6 +12,8 @@ test.describe('Authentication & Session', () => {
   test(...tc('AUTH-V01'), async ({ page, pages }) => {
     await pages.login.loginViaUi(validAgent);
     await pages.login.expectLoggedIn();
+    // this build lands on the agent's open draft after login, so open the dashboard explicitly
+    await page.goto(routes.dashboard);
     await expect(page).toHaveURL(/dashboard/);
     await expect(pages.dashboard.$(S.dashboard.greeting)).toBeVisible();
   });

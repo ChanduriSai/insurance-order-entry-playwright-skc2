@@ -31,6 +31,7 @@ function buildClient(overrides = {}) {
     nationality: 'United States',
     occupation: 'Engineer',
     employer: 'Example QA Inc',
+    employerAddress: '100 Example Way, Boston, MA 02110',
     ...overrides,
   };
 }

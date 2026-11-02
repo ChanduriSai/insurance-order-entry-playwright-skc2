@@ -13,6 +13,7 @@ class ClientInfoPage extends BasePage {
     await this.choose(S.client.nationality, c.nationality);
     await this.fillField(S.client.occupation, c.occupation);
     await this.fillField(S.client.employer, c.employer);
+    await this.fillField(S.client.employerAddress, c.employerAddress);
   }
 
   async setDob(date) {
