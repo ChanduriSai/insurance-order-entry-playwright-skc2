@@ -1,12 +1,7 @@
 node_modules/
 .auth/
-reports/
-test-results/
-playwright-report/
 discovery/
 
 # Playwright
-/playwright-report/
-/blob-report/
 /playwright/.cache/
 /playwright/.auth/
