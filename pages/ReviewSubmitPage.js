@@ -21,6 +21,28 @@ class ReviewSubmitPage extends BasePage {
     return parseMoney(await el.textContent());
   }
 
+  /** Premium lines of the review snapshot: { base, rider, total } (NaN for a line that is not shown). */
+  async premiumBreakdown() {
+    const text = await this.reviewText();
+    const line = (re) => {
+      const m = text.match(re);
+      return m ? parseMoney(m[1]) : NaN;
+    };
+    return {
+      base: line(/Base Policy Premium\s*\$?\s*([\d,.]+)/i),
+      rider: line(/Rider Premium\s*\$?\s*([\d,.]+)/i),
+      total: line(/Total Modal Premium\s*\$?\s*([\d,.]+)/i),
+    };
+  }
+
+  /** Calculated age of the client as shown in the review snapshot (NaN when not shown). */
+  async calculatedAge() {
+    const el = this.$(S.review.calculatedAge);
+    if (!(await el.count())) return NaN;
+    const m = ((await el.textContent()) || '').match(/\d+/);
+    return m ? Number(m[0]) : NaN;
+  }
+
   /** Full text of the review area, for "review shows what was entered" checks. */
   async reviewText() {
     return (await this.$(S.review.summary).innerText()) || '';

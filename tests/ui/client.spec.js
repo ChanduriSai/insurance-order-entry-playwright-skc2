@@ -2,7 +2,7 @@ const { test, tc, expect, env } = require('../../fixtures');
 const M = require('../../config/messages');
 const { S } = require('../../config/selectors');
 const { dobForAge, futureDate } = require('../../utils/dates');
-const { buildAddress } = require('../../utils/dataBuilder');
+const { buildAddress, buildClient } = require('../../utils/dataBuilder');
 const { progressTo } = require('../../utils/flows');
 const { expectBlocked, expectAdvanced, captureEvidence } = require('../../utils/assertions');
 
@@ -123,11 +123,13 @@ test.describe('Client / Insured Information', () => {
 
 
   test(...tc('CLI-V13'), async ({ pages }) => {
-    await progressTo(pages, 'client');
+    // This build does not show the age next to the DOB field; the calculated age appears in the review snapshot, so each age
+    // is checked there (one full journey per age, hence the longer timeout).
+    test.setTimeout(480_000);
     for (const age of [18, 35, 65]) {
-      await test.step(`DOB for age ${age} shows age ${age}`, async () => {
-        await pages.client.setDob(dobForAge(age));
-        await pages.client.expectAgeShown(age);
+      await test.step(`DOB for age ${age} shows calculated age ${age} on the review page`, async () => {
+        await progressTo(pages, 'review', { client: buildClient({ dob: dobForAge(age) }) });
+        expect(await pages.review.calculatedAge(), `calculated age for a client who is ${age} today`).toBe(age);
       });
     }
   });

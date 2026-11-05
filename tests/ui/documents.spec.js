@@ -1,5 +1,6 @@
 const { test, tc, expect, env } = require('../../fixtures');
 const M = require('../../config/messages');
+const { S } = require('../../config/selectors');
 const { files } = require('../../utils/files');
 const { progressTo } = require('../../utils/flows');
 const { expectBlocked, captureEvidence } = require('../../utils/assertions');
@@ -11,7 +12,7 @@ test.describe('Document Upload & Validation Summary', () => {
     await progressTo(pages, 'documents');
     for (const file of [files.validPdf(), files.validJpg(), files.validPng()]) {
       await test.step(`${file.name} is accepted`, async () => {
-        await pages.documents.upload(file, 0);
+        await pages.documents.upload(file);
         await expect(pages.documents.uploaded.first()).toBeVisible();
         await expect(pages.documents.$$({ id: 'x', css: '.field-error, .invalid-feedback, [role="alert"]' }).filter({ hasText: M.fileType })).toHaveCount(0);
       });
@@ -22,7 +23,7 @@ test.describe('Document Upload & Validation Summary', () => {
     await progressTo(pages, 'documents');
     for (const file of [files.unsupportedExe(), files.unsupportedTxt()]) {
       await test.step(`${file.name} is rejected`, async () => {
-        await pages.documents.upload(file, 0);
+        await pages.documents.upload(file);
         await pages.documents.expectErrorText(M.fileType);
         await expect(pages.documents.uploaded).toHaveCount(0);
       });
@@ -34,7 +35,7 @@ test.describe('Document Upload & Validation Summary', () => {
     test.skip(max === null, 'Set MAX_UPLOAD_MB to run (Q17)');
     test.skip(max >= 49, 'Playwright in-memory upload limit is 50 MB; use a smaller MAX_UPLOAD_MB on the test environment');
     await progressTo(pages, 'documents');
-    await pages.documents.upload(files.oversizePdf(max), 0);
+    await pages.documents.upload(files.oversizePdf(max));
     await pages.documents.expectErrorText(M.fileSize);
   });
 
@@ -51,7 +52,7 @@ test.describe('Document Upload & Validation Summary', () => {
     // The app lets the agent reach review: submission itself must still be blocked.
     if (await pages.review.submitButton.isEnabled()) {
       await pages.review.submit();
-      await expect(pages.review.$({ id: 'reference-number', css: '[data-testid="reference-number"], .reference-number' }), 'no reference number may be issued without mandatory documents').toHaveCount(0);
+      await expect(pages.review.$(S.review.reference), 'no reference number may be issued without mandatory documents').toHaveCount(0);
     } else {
       await expect(pages.review.submitButton).toBeDisabled();
     }

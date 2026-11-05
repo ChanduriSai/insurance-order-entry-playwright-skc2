@@ -10,6 +10,18 @@ function applicationIdFromUrl(url) {
   return m ? m[1] : null;
 }
 
+/** Link names on the Application Summary page, per workflow step. */
+const STEP_LINKS = {
+  client: /^client information/i,
+  address: /^address/i,
+  kyc: /^kyc/i,
+  product: /^product/i,
+  riders: /^riders/i,
+  beneficiaries: /^beneficiaries/i,
+  documents: /^documents/i,
+  review: /^review application/i,
+};
+
 class DashboardPage extends BasePage {
   async goto() {
     await this.page.goto(routes.dashboard);
@@ -83,11 +95,19 @@ class DashboardPage extends BasePage {
     await this.page.waitForLoadState('networkidle');
   }
 
-  /** Opens a draft row (resume). */
-  async resume(row) {
+  /**
+   * Opens a draft row (resume). In this app "Open" lands on the read-only Application Summary, which links to every step,
+   * so the helper continues into `step` (default: the first step) and leaves the browser on that step's form.
+   */
+  async resume(row, step = 'client') {
     const link = row.locator('a, button').filter({ hasText: /resume|continue|open|edit/i }).first();
     if (await link.count()) await link.click();
     else await row.click();
+    const summary = this.page.getByTestId('application-summary-page');
+    if (await summary.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await this.page.getByRole('link', { name: STEP_LINKS[step] }).first().click();
+      await this.page.waitForLoadState('load');
+    }
   }
 
   async logout() {

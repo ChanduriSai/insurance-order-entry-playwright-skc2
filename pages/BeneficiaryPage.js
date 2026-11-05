@@ -27,25 +27,59 @@ class BeneficiaryPage extends BasePage {
     await this.fillField(S.beneficiary.allocation, b.allocation);
     if (b.guardianName) await this.fillField(S.beneficiary.guardianName, b.guardianName);
     if (b.guardianRelationship) await this.choose(S.beneficiary.guardianRelationship, b.guardianRelationship);
+    if (b.guardianContact) await this.fillField(S.beneficiary.guardianContact, b.guardianContact);
+    if (b.guardianAddress) await this.fillField(S.beneficiary.guardianAddress, b.guardianAddress);
+    if (b.legalAck) await this.setChecked(S.beneficiary.legalAck, true);
     if (b.trustName) await this.fillField(S.beneficiary.trustName, b.trustName);
     if (b.trusteeName) await this.fillField(S.beneficiary.trusteeName, b.trusteeName);
     if (b.orgName) await this.fillField(S.beneficiary.orgName, b.orgName);
     if (b.irrevocable) await this.choose(S.beneficiary.irrevocable, 'Irrevocable');
   }
 
+  /**
+   * Runs an action that may raise a native confirm()/alert() (this app asks for a legal confirmation when a beneficiary is
+   * saved as irrevocable, and may confirm a removal). Playwright DISMISSES dialogs by default, which silently cancels the
+   * save, so the dialog is accepted here. Returns the last dialog seen ({ type, message }) or null.
+   */
+  async acceptingDialogs(action) {
+    let seen = null;
+    const handler = async (d) => {
+      seen = { type: d.type(), message: d.message() };
+      await d.accept();
+    };
+    this.page.on('dialog', handler);
+    try {
+      await action();
+      await this.page.waitForLoadState('load');
+    } finally {
+      this.page.off('dialog', handler);
+    }
+    return seen;
+  }
+
+  /** Presses Save Beneficiary; returns the confirm dialog it raised (accepted), or null. */
+  async save() {
+    return this.acceptingDialogs(() => this.$(S.beneficiary.save).click());
+  }
+
   async add(b) {
     await this.fillForm(b);
-    await this.$(S.beneficiary.save).click();
+    return this.save();
   }
 
   async remove(index = 0) {
-    await this.rows.nth(index).locator('button, a').filter({ hasText: /remove|delete/i }).first().click();
+    const row = this.rows.nth(index);
+    await this.acceptingDialogs(() => row.locator('button, a').filter({ hasText: /remove|delete/i }).first().click());
   }
 
-  /** Running totals shown by the page (NaN when the page does not display them). */
+  /** Running totals from "Primary allocation: 60.00% | Secondary allocation: 0.00%" (NaN when the page does not show them). */
   async totals() {
-    const read = async (def) => (await this.$(def).count() ? parseMoney(await this.$(def).textContent()) : NaN);
-    return { primary: await read(S.beneficiary.primaryTotal), secondary: await read(S.beneficiary.secondaryTotal) };
+    const el = this.$(S.beneficiary.primaryTotal);
+    if (!(await el.count())) return { primary: NaN, secondary: NaN };
+    const text = (await el.textContent()) || '';
+    const primary = text.match(/primary[^\d-]*(-?[\d,.]+)\s*%/i);
+    const secondary = text.match(/secondary[^\d-]*(-?[\d,.]+)\s*%/i);
+    return { primary: primary ? parseMoney(primary[1]) : NaN, secondary: secondary ? parseMoney(secondary[1]) : NaN };
   }
 
   get message() {

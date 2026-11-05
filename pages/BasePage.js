@@ -103,10 +103,20 @@ class BasePage {
       .first();
   }
 
+  /**
+   * A validation error for the field: either an error element next to it, or the browser's NATIVE constraint validation
+   * (this app marks required fields with the HTML `required` attribute, so the message lives in `validationMessage`,
+   * not in the DOM, and the form is never submitted).
+   */
   async expectFieldError(def, pattern) {
     const err = this.fieldError(def);
-    await expect(err, `expected a validation error next to "${def.id}"`).toBeVisible();
-    if (pattern) await expect(err).toHaveText(pattern);
+    const field = this.$(def);
+    const read = async () => {
+      if (await err.isVisible().catch(() => false)) return ((await err.textContent()) || '').trim();
+      return field.evaluate((n) => (n.matches(':invalid') ? n.validationMessage : '')).catch(() => '');
+    };
+    await expect.poll(read, { message: `expected a validation error next to "${def.id}"` }).not.toBe('');
+    if (pattern) expect(await read()).toMatch(pattern);
   }
 
   /** Any visible validation / alert text matching the pattern, anywhere on the page. */

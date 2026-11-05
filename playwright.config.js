@@ -34,8 +34,9 @@ if (env.crossBrowser) {
 module.exports = defineConfig({
   testDir: './tests',
   outputDir: 'reports/test-results',
-  timeout: 45_000,
-  expect: { timeout: 8_000 },
+  // The lab server answers in ~1-5 s per page, and a full 8-step journey takes 35-60 s, so 45 s was too tight (timeouts, not defects).
+  timeout: 120_000,
+  expect: { timeout: 12_000 },
   // Shared lab environment: sequential by default (WORKERS=1). Parallel runs add load and shared-data collisions;
   // raise WORKERS only after the single-worker baseline is stable. Retries stay low so a flaky test is seen, not hidden.
   fullyParallel: env.workers > 1,
@@ -58,8 +59,8 @@ module.exports = defineConfig({
     screenshot: 'off',
     video: 'retain-on-failure',
     trace: env.isCI ? 'on-first-retry' : 'retain-on-failure',
-    actionTimeout: 10_000,
-    navigationTimeout: 15_000,
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
   },
 
   projects,

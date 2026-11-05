@@ -34,10 +34,13 @@ test.describe('Product Selection & Policy Configuration', () => {
       const { data } = await progressTo(pages, 'product');
       const before = await pages.product.stepTitle();
       await pages.product.select(data.product.namePattern);
-      await pages.product.setFaceValue(r.faceValueMin - 1);
+      // configure() also picks the (required) payment term: without it the browser blocks the form before the app's own range check runs
+      await pages.product.configure({ ...data.product, faceValue: r.faceValueMin - 1 });
       await pages.product.next();
       await expectBlocked(pages.product, before, M.faceValueLimit);
-      await pages.product.setFaceValue(r.faceValueMin);
+      // the rejected submit re-renders the form, so choose the product and terms again rather than assuming they were kept
+      await pages.product.select(data.product.namePattern);
+      await pages.product.configure({ ...data.product, faceValue: r.faceValueMin });
       await pages.product.next();
       await expectAdvanced(pages.product, before);
     });
@@ -47,7 +50,7 @@ test.describe('Product Selection & Policy Configuration', () => {
       const { data } = await progressTo(pages, 'product');
       const before = await pages.product.stepTitle();
       await pages.product.select(data.product.namePattern);
-      await pages.product.setFaceValue(r.faceValueMax + 1);
+      await pages.product.configure({ ...data.product, faceValue: r.faceValueMax + 1 });
       await pages.product.next();
       await expectBlocked(pages.product, before, M.faceValueLimit);
     });
@@ -130,12 +133,13 @@ test.describe('Product Selection & Policy Configuration', () => {
   test(...tc('PROD-V11'), async ({ pages, page }) => {
     const { data } = await progressTo(pages, 'product');
     await pages.product.select(data.product.namePattern);
-    await pages.product.setFaceValue(data.product.faceValue);
+    await pages.product.configure({ ...data.product, frequency: undefined });
     const options = await pages.product.optionTexts(S.product.frequency);
     await pages.product.setFrequency(options[options.length - 1]);
     const frequency = await pages.product.getValue(S.product.frequency);
-    await pages.product.saveDraft();
-    await page.reload();
+    const productUrl = page.url();
+    await pages.product.saveDraft(); // "Save and Continue": saves the draft AND moves on to Riders
+    await page.goto(productUrl); // reopen the saved step (a reload would show the next step)
     expect(parseMoney(await pages.product.getValue(S.product.faceValue)), 'face value after reload').toBe(data.product.faceValue);
     expect(await pages.product.getValue(S.product.frequency), 'frequency after reload').toBe(frequency);
   });

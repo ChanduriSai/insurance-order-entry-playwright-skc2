@@ -3,7 +3,7 @@
  * so they are OFF for this whole file (test.use must be top-level for trace/video). Masked screenshots from
  * utils/evidence.js are still attached on failure. Data is synthetic (900-series SSN, example.test emails) regardless.
  */
-const { test, expect } = require('../../fixtures');
+const { test, expect, env } = require('../../fixtures');
 const { tc } = require('../../fixtures');
 const M = require('../../config/messages');
 const { S } = require('../../config/selectors');
@@ -45,7 +45,9 @@ test.describe('Client / KYC - sensitive data', () => {
   test(...tc('CLI-V12'), async ({ pages, page }, testInfo) => {
     const { data } = await progressTo(pages, 'product', {
       kyc: buildKyc({ income: 12000 }),
-      product: buildProduct({ faceValue: 5_000_000 }),
+      // the HIGHEST face value the selected product allows (a value above the product maximum is rejected by the range check
+      // before any affordability rule can run)
+      product: buildProduct({ faceValue: env.rules.faceValueMax || 1_000_000 }),
     });
     await pages.product.select(data.product.namePattern);
     await pages.product.configure(data.product);

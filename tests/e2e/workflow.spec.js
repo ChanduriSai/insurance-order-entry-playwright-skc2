@@ -77,7 +77,11 @@ test.describe('Submission & Status Tracking', () => {
     const text = await pages.review.reviewText();
     expect(text, 'client first name on review').toContain(data.client.firstName);
     expect(text, 'client last name on review').toContain(data.client.lastName);
-    expect(text, 'beneficiary on review').toContain(data.beneficiaries[0].name);
+    // The review snapshot does not list beneficiaries by name (it shows client, product and premium), so the saved
+    // beneficiary is checked on the Application Summary page, which shows the beneficiary count.
+    await page.getByTestId('workflow-summary-button').click();
+    await expect(page.getByTestId('application-summary-page'), 'beneficiary count on the application summary').toContainText(/Beneficiaries\s*1\b/);
+    await page.goBack();
     expect(await pages.review.premium(), 'review premium vs configured').toBeCloseTo(configured, 2);
   });
 });

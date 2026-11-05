@@ -35,7 +35,7 @@ class ApiClient {
   static async isAvailable(playwright) {
     const ctx = await playwright.request.newContext({ baseURL: env.apiBaseUrl, extraHTTPHeaders: { Accept: 'application/json' } });
     try {
-      const res = await ctx.post(ep.login, { data: { email: 'probe@insurance.test', password: 'probe' } });
+      const res = await ctx.post(ep.login, { data: { email: 'probe@insurance.test', password: `probe-${Date.now()}` } });
       return res.status() !== 404;
     } catch {
       return false;

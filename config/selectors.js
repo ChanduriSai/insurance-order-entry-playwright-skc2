@@ -15,21 +15,21 @@ const t = (id, rest = {}) => ({ id, ...rest });
 const S = {
   common: {
     next: t('step-next', { css: '[data-testid$="save-continue-button"], [data-testid="beneficiary-continue-button"], [data-testid="documents-continue-review-button"]', role: 'button', name: /^(next|continue|save (and|&) continue)/i }),
-    back: t('step-back', { role: 'button', name: /^(back|previous)/i }),
+    back: t('workflow-back-button', { role: 'button', name: /^(← )?(back|previous)/i }),
     // this app has no separate Save Draft button: Save and Continue persists the DRAFT
     saveDraft: t('save-draft', { css: '[data-testid$="save-continue-button"]', role: 'button', name: /save (as )?draft|save for later|save (and|&) continue/i }),
     stepTitle: t('step-title', { css: 'main h1' }),
     toast: t('toast-message', { css: '.toast, .alert-success, [role="status"]' }),
     logout: t('nav-logout-button', { role: 'button', name: /log ?out|sign ?out/i }), // CONFIRMED (sibling app)
     formErrorSummary: t('form-error-summary', { css: '.alert-danger, [role="alert"]' }),
-    anyError: { id: 'field-error', css: '.field-error, .invalid-feedback, .text-danger, .error, [role="alert"]' },
+    anyError: { id: 'field-error', css: '.field-error, .invalid-feedback, .text-danger, .error, [role="alert"], [data-testid$="error-alert"], [data-testid$="error-summary"]' },
   },
 
   login: {
     email: t('login-email-input', { label: /e-?mail|user ?name/i }), // CONFIRMED
     password: t('login-password-input', { label: /^password/i }), // CONFIRMED
     submit: t('login-submit-button', { role: 'button', name: /log ?in|sign ?in/i }), // CONFIRMED
-    error: t('login-error', { css: '.field-error, .alert-danger, [role="alert"]' }),
+    error: t('validation-error-alert', { css: '.field-error, .alert-danger, [role="alert"]' }), // the app's error banner on /login
     otpInput: t('login-otp', { label: /otp|verification code|one.?time/i }),
     otpSubmit: t('login-otp-submit', { role: 'button', name: /verify|submit|continue/i }),
     forgotLink: t('forgot-password-link', { role: 'link', name: /forgot/i }),
@@ -120,10 +120,11 @@ const S = {
   },
 
   rider: {
-    cardPrefix: 'rider-card-',
-    cards: t('rider-cards', { css: '[data-testid^="rider-card-"], .rider-card' }),
-    checkbox: t('rider-toggle', { role: 'checkbox' }),
-    coverage: t('rider-coverage', { label: /coverage|amount/i }),
+    cardPrefix: 'rider-row-',
+    // one row per rider: rider-row-N contains rider-selected-N (checkbox) and rider-coverage-amount-N (input)
+    cards: t('rider-cards', { css: '[data-testid^="rider-row-"]' }),
+    checkbox: t('rider-toggle', { css: '[data-testid^="rider-selected-"]', role: 'checkbox' }),
+    coverage: t('rider-coverage', { css: '[data-testid^="rider-coverage-amount-"]', label: /coverage|amount/i }),
     summaryPremium: t('rider-premium-summary', { css: '[data-testid="rider-premium-summary"], .rider-premium' }),
     totalPremium: t('total-premium', { css: '[data-testid="total-premium"], .total-premium' }),
     questionnaire: t('health-questionnaire', { css: '[data-testid="health-questionnaire"], form.health-questionnaire, [role="dialog"]' }),
@@ -144,6 +145,9 @@ const S = {
     allocation: t('beneficiary-allocation-input', { label: /allocation|share|percent/i }),
     guardianName: t('beneficiary-guardian-name-input', { label: /guardian.*name/i }),
     guardianRelationship: t('beneficiary-guardian-relationship-input', { label: /guardian.*relationship/i }),
+    guardianContact: t('beneficiary-guardian-contact-input', { label: /guardian.*contact/i }),
+    guardianAddress: t('beneficiary-guardian-address-input', { label: /guardian.*address/i }),
+    legalAck: t('beneficiary-legal-acknowledgement-checkbox', { role: 'checkbox', name: /legal acknowledg/i }),
     trustName: t('beneficiary-trust-name-input', { label: /trust name/i }),
     trusteeName: t('beneficiary-trustee-name-input', { label: /trustee/i }),
     trustDate: t('beneficiary-trust-date-input', { label: /trust date/i }),
@@ -160,14 +164,18 @@ const S = {
   },
 
   documents: {
-    uploadInputs: t('document-upload-inputs', { css: '[data-testid^="document-upload-"] input[type="file"], input[type="file"][data-testid^="document-upload-"], input[type="file"]' }),
-    uploadedItems: t('uploaded-documents', { css: '[data-testid^="document-uploaded-"], .uploaded-document, [data-testid^="document-status-"]' }),
+    uploadInputs: t('document-upload-kyc', { css: 'input[type="file"]' }),
+    typeSelect: t('document-type-select', { label: /document type/i }),
+    uploadButton: t('document-upload-button', { role: 'button', name: /upload document/i }),
+    // one <tr> per uploaded document; the empty-state row (documents-empty-state) is excluded
+    uploadedItems: t('documents-rows', { css: '[data-testid="documents-table"] tbody tr:not(:has([data-testid="documents-empty-state"]))' }),
     message: t('document-message', { css: '.alert, .field-error, [role="alert"]' }),
   },
 
   review: {
     summary: t('review-summary', { css: 'main' }),
     premium: t('review-total-premium', { css: '[data-testid="review-premium"], .review-premium' }),
+    calculatedAge: t('review-client-calculated-age'), // the app shows the calculated age on the review snapshot only
     clientName: t('review-client-name'),
     productName: t('review-product-name'),
     riders: t('review-riders'),
@@ -175,9 +183,9 @@ const S = {
     validationSummary: t('review-validation-errors', { css: '[data-testid="validation-summary"], .validation-summary' }),
     validationItems: t('validation-summary-item', { css: '[data-testid^="validation-item"], .validation-summary li, .validation-summary a' }),
     submit: t('review-submit-application-button', { role: 'button', name: /^submit/i }),
-    reference: t('reference-number', { css: '[data-testid="reference-number"], .reference-number' }),
+    reference: t('confirmation-reference-number', { css: '[data-testid="confirmation-reference-number"], .reference-number' }),
     status: t('application-status-badge', { css: '[data-testid="application-status-badge"], .status-badge, .badge' }),
-    confirmation: t('submission-confirmation', { css: '[data-testid="submission-confirmation"], .alert-success, [role="status"]' }),
+    confirmation: t('submission-confirmation-page', { css: '[data-testid="submission-confirmation-page"], .alert-success, [role="status"]' }),
   },
 };
 

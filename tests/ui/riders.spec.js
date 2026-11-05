@@ -2,7 +2,7 @@ const { test, tc, expect, env } = require('../../fixtures');
 const M = require('../../config/messages');
 const { dobForAge } = require('../../utils/dates');
 const { buildClient } = require('../../utils/dataBuilder');
-const { progressTo } = require('../../utils/flows');
+const { progressTo, finishFrom } = require('../../utils/flows');
 const { captureEvidence } = require('../../utils/assertions');
 
 const r = env.rules;
@@ -19,6 +19,7 @@ test.describe('Rider Selection', () => {
     await progressTo(pages, 'riders');
     await needRider(pages, adb, 'ADB');
     await pages.rider.add(adb);
+    await pages.rider.saveAndReopen(); // the premium is recalculated on save
     expect(await pages.rider.isAdded(adb)).toBe(true);
     await expect.poll(() => pages.rider.riderPremiumSummary(), { message: 'rider premium in the summary' }).toBeGreaterThan(0);
   });
@@ -28,6 +29,7 @@ test.describe('Rider Selection', () => {
     await needRider(pages, adb, 'ADB');
     await pages.rider.add(adb);
     await pages.rider.setCoverage(adb, data.product.faceValue + 1);
+    await pages.rider.next(); // the app validates coverage on save
     await captureEvidence(page, testInfo, 'rider-coverage-above-face-value');
     await pages.rider.expectErrorText(M.riderExceeds);
   });
@@ -59,6 +61,7 @@ test.describe('Rider Selection', () => {
     const extra = pages.rider.toggleAt(usable[r.maxRiders]);
     if (await extra.isDisabled()) return; // disabled == correctly blocked
     await pages.rider.addAt(usable[r.maxRiders]);
+    await pages.rider.next(); // the app validates the rider count on save
     await pages.rider.expectErrorText(M.riderMax);
   });
 
@@ -87,14 +90,17 @@ test.describe('Rider Selection', () => {
   });
 
   test(...tc('RIDER-V07'), async ({ pages, page }, testInfo) => {
-    await progressTo(pages, 'riders');
+    const { data } = await progressTo(pages, 'riders');
     await needRider(pages, adb, 'ADB');
-    const before = await pages.rider.totalPremium();
-    expect(before, 'total premium must be displayed on the rider step').not.toBeNaN();
     await pages.rider.add(adb);
+    await pages.rider.saveAndReopen();
     await expect.poll(() => pages.rider.riderPremiumSummary()).toBeGreaterThan(0);
     const riderPremium = await pages.rider.riderPremiumSummary();
     await captureEvidence(page, testInfo, 'rider-premium-itemised');
-    await expect.poll(() => pages.rider.totalPremium(), { message: 'total = old total + rider premium' }).toBeCloseTo(before + riderPremium, 2);
+    // The rider step shows only the rider premium; the itemised lines and the total are on the review page.
+    await finishFrom(pages, 'riders', { ...data, riders: [] });
+    const { base, rider, total } = await pages.review.premiumBreakdown();
+    expect(rider, 'rider premium itemised on review').toBeCloseTo(riderPremium, 2);
+    expect(total, 'total = base + rider premium').toBeCloseTo(base + rider, 2);
   });
 });

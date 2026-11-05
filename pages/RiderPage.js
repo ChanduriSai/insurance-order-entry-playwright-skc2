@@ -55,9 +55,21 @@ class RiderPage extends BasePage {
   }
 
   async setCoverage(pattern, amount) {
-    const input = this.cardFor(pattern).getByLabel(S.rider.coverage.label).or(this.cardFor(pattern).getByTestId('rider-coverage')).first();
+    const card = this.cardFor(pattern);
+    const input = card.locator(S.rider.coverage.css).or(card.getByLabel(S.rider.coverage.label)).first();
     await input.fill(String(amount));
     await input.press('Tab');
+  }
+
+  /**
+   * This app only recalculates the rider premium when the step is SAVED (ticking a rider shows nothing new). Saves with
+   * Save and Continue (which moves on to Beneficiaries), then reopens the Riders step so the saved state can be read.
+   */
+  async saveAndReopen() {
+    const url = this.page.url();
+    await this.next();
+    await this.page.waitForLoadState('load');
+    await this.page.goto(url);
   }
 
   async totalPremium() {
